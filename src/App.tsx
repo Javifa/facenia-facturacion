@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { storageService, EMPTY_EMPRESA_CONFIG, EMPTY_STATS } from './services/storageService';
 import type { Cliente, EmpresaConfig, Factura, ResumenEstadisticas } from './types';
 import { AppLayout, type CurrentView } from './components/layout/AppLayout';
@@ -77,9 +78,12 @@ const MainAppContent: React.FC = () => {
   // Si está cargando la sesión
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3 text-white">
-        <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
-        <p className="text-sm font-medium text-slate-300">Conectando con Supabase...</p>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-3 text-slate-900 dark:text-white">
+        <img src="/logo.png" alt="FACENIA" className="w-11 h-11 object-contain mb-1" />
+        <div className="flex items-center gap-2.5">
+          <Loader2 className="w-5 h-5 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Iniciando entorno de facturación...</p>
+        </div>
       </div>
     );
   }
@@ -310,8 +314,10 @@ const MainAppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainAppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MainAppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

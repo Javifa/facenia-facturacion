@@ -39,25 +39,26 @@ export const RectifyModal: React.FC<RectifyModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-md w-full shadow-modal border border-slate-200 overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-modal border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-purple-50/80">
-          <div className="flex items-center gap-2.5 text-purple-900">
-            <FileText className="w-5 h-5 text-purple-700" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-purple-50/80 dark:bg-purple-950/30">
+          <div className="flex items-center gap-2.5 text-purple-900 dark:text-purple-200">
+            <FileText className="w-5 h-5 text-purple-700 dark:text-purple-400" />
             <h2 className="text-base font-bold">Emitir Factura Rectificativa</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"
+            aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1">
+          <div className="p-3.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 rounded-xl text-xs text-purple-900 dark:text-purple-200 space-y-1">
             <p className="font-bold flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-purple-700" />
+              <AlertTriangle className="w-4 h-4 text-purple-700 dark:text-purple-400" />
               <span>Procedimiento de rectificación (RD 1619/2012)</span>
             </p>
             <p>
@@ -65,13 +66,15 @@ export const RectifyModal: React.FC<RectifyModalProps> = ({
             </p>
           </div>
 
-          {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+          {error && <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{error}</p>}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            <label htmlFor="rectify-motivo" className="ui-label">
               Motivo de la Rectificación *
             </label>
             <textarea
+              id="rectify-motivo"
+              name="motivo"
               rows={3}
               required
               value={motivo}
@@ -79,21 +82,21 @@ export const RectifyModal: React.FC<RectifyModalProps> = ({
                 setMotivo(e.target.value);
                 setError(null);
               }}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="ui-input"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800"
+              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-semibold hover:bg-purple-800 shadow-subtle"
+              className="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-semibold hover:bg-purple-800 shadow-subtle transition-colors"
             >
               Generar Factura Rectificativa
             </button>

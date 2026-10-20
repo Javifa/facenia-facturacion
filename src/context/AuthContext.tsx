@@ -56,10 +56,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ? 'gestor'
               : 'administrador';
 
+          const rawNombre = filaUsuario.nombre || '';
+          const nombreProfesional =
+            !rawNombre || rawNombre.toLowerCase().includes('supremo')
+              ? 'Administrador Principal'
+              : rawNombre;
+
           return {
             id: filaUsuario.id,
             email: filaUsuario.email || emailStr,
-            nombre: filaUsuario.nombre || (rolValido === 'admin_supremo' ? 'Admin Supremo' : 'Administrador'),
+            nombre: nombreProfesional,
             rol: rolValido,
             ultimoAcceso: ahora,
           };
@@ -69,12 +75,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    const metaNombre = authUser.user_metadata?.nombre || '';
     return {
       id: authUser.id,
       email: emailStr,
       nombre:
-        authUser.user_metadata?.nombre ||
-        (isSuperMeta ? 'Admin Supremo' : emailStr.split('@')[0] || 'Administrador'),
+        !metaNombre || metaNombre.toLowerCase().includes('supremo')
+          ? isSuperMeta
+            ? 'Administrador Principal'
+            : emailStr.split('@')[0] || 'Administrador'
+          : metaNombre,
       rol: isSuperMeta ? 'admin_supremo' : 'administrador',
       ultimoAcceso: new Date().toISOString(),
     };

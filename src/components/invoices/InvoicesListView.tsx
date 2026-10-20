@@ -50,7 +50,6 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
   const filteredFacturas = useMemo(() => {
     return facturas
       .filter((f) => {
-        // Búsqueda texto
         const q = searchTerm.toLowerCase();
         const matchText =
           f.numero.toLowerCase().includes(q) ||
@@ -59,12 +58,10 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
 
         if (!matchText) return false;
 
-        // Filtro estado
         if (statusFilter !== 'todos' && f.estado !== statusFilter) {
           return false;
         }
 
-        // Filtro fechas
         if (fechaDesde && f.fechaEmision < fechaDesde) return false;
         if (fechaHasta && f.fechaEmision > fechaHasta) return false;
 
@@ -87,21 +84,34 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
       });
   }, [facturas, searchTerm, statusFilter, fechaDesde, fechaHasta, sortBy]);
 
+  const resumenFiltrado = useMemo(() => {
+    return filteredFacturas.reduce(
+      (acc, f) => {
+        if (f.estado !== 'borrador') {
+          acc.total += f.totalFinal || 0;
+          acc.pendiente += f.importePendiente || 0;
+        }
+        return acc;
+      },
+      { total: 0, pendiente: 0 }
+    );
+  }, [filteredFacturas]);
+
   const getBadgeClass = (estado: Factura['estado']) => {
     switch (estado) {
       case 'cobrada':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
       case 'pendiente_cobro':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
       case 'parcialmente_cobrada':
-        return 'bg-blue-50 text-brand-700 border-blue-200';
+        return 'bg-brand-50 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800';
       case 'vencida':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800';
       case 'rectificada':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
       case 'borrador':
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
     }
   };
 
@@ -139,25 +149,27 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Historial de Facturas</h1>
-          <p className="text-sm text-slate-500">
-            Registro cronológico, control de cobros y emisión de documentos fiscales.
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Libro Registro de Facturas
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Consulta histórica, conciliación de cobros y emisión de facturas rectificativas.
           </p>
         </div>
 
         <button
           onClick={onNewInvoice}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-semibold hover:bg-brand-700 shadow-subtle focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-sm font-semibold shadow-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Crear Factura</span>
+          <span>Emitir Factura</span>
         </button>
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-card space-y-3">
+      <div className="ui-card p-4 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Búsqueda */}
           <div className="lg:col-span-2 relative">
@@ -165,25 +177,31 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
               <Search className="w-4 h-4" />
             </div>
             <input
+              id="filter-search-invoice"
+              name="searchInvoice"
+              aria-label="Buscar por número o cliente"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por número o cliente..."
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              placeholder="Buscar por número, razón social o NIF..."
+              className="ui-input pl-9 py-2 text-xs"
             />
           </div>
 
           {/* Filtro Estado */}
           <div>
             <select
+              id="filter-status-invoice"
+              name="statusFilter"
+              aria-label="Filtrar por estado"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              className="ui-input py-2 text-xs"
             >
-              <option value="todos">Todos los Estados</option>
+              <option value="todos">Todos los estados</option>
               <option value="borrador">Borradores</option>
-              <option value="pendiente_cobro">Pendientes de Cobro</option>
-              <option value="parcialmente_cobrada">Cobro Parcial</option>
+              <option value="pendiente_cobro">Pendientes de cobro</option>
+              <option value="parcialmente_cobrada">Cobro parcial</option>
               <option value="cobrada">Cobradas</option>
               <option value="vencida">Vencidas</option>
               <option value="rectificada">Rectificadas</option>
@@ -193,9 +211,12 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
           {/* Ordenación */}
           <div>
             <select
+              id="filter-sort-invoice"
+              name="sortBy"
+              aria-label="Ordenar facturas"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
+              className="ui-input py-2 text-xs"
             >
               <option value="fecha-desc">Fecha: Más reciente</option>
               <option value="fecha-asc">Fecha: Más antigua</option>
@@ -207,28 +228,48 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
           {/* Fechas desde/hasta */}
           <div className="flex items-center gap-1.5">
             <input
+              id="filter-date-from"
+              name="fechaDesde"
+              aria-label="Fecha desde"
               type="date"
               title="Fecha desde"
               value={fechaDesde}
               onChange={(e) => setFechaDesde(e.target.value)}
-              className="w-1/2 px-1.5 py-2 text-[11px] bg-slate-50 border border-slate-300 rounded-lg focus:outline-none"
+              className="ui-input w-1/2 px-2 py-2 text-[11px]"
             />
             <span className="text-slate-400 text-xs">-</span>
             <input
+              id="filter-date-to"
+              name="fechaHasta"
+              aria-label="Fecha hasta"
               type="date"
               title="Fecha hasta"
               value={fechaHasta}
               onChange={(e) => setFechaHasta(e.target.value)}
-              className="w-1/2 px-1.5 py-2 text-[11px] bg-slate-50 border border-slate-300 rounded-lg focus:outline-none"
+              className="ui-input w-1/2 px-2 py-2 text-[11px]"
             />
           </div>
         </div>
 
         {/* Resumen de filtro activo */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-          <span>
-            Mostrando <strong>{filteredFacturas.length}</strong> de <strong>{facturas.length}</strong> facturas
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-4">
+            <span>
+              Mostrando <strong className="text-slate-900 dark:text-white">{filteredFacturas.length}</strong> de{' '}
+              <strong className="text-slate-900 dark:text-white">{facturas.length}</strong> facturas
+            </span>
+            {filteredFacturas.length > 0 && (
+              <span className="hidden sm:inline text-slate-400 dark:text-slate-600">|</span>
+            )}
+            {filteredFacturas.length > 0 && (
+              <span>
+                Total emitido en vista:{' '}
+                <strong className="font-mono text-slate-900 dark:text-white">
+                  {formatCurrency(resumenFiltrado.total)}
+                </strong>
+              </span>
+            )}
+          </div>
           {(searchTerm || statusFilter !== 'todos' || fechaDesde || fechaHasta) && (
             <button
               onClick={() => {
@@ -237,29 +278,31 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
                 setFechaDesde('');
                 setFechaHasta('');
               }}
-              className="text-brand-600 hover:text-brand-800 font-semibold"
+              className="text-brand-700 dark:text-brand-400 hover:underline font-semibold"
             >
-              Limpiar filtros
+              Restablecer filtros
             </button>
           )}
         </div>
       </div>
 
       {/* Tabla de Facturas */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-card overflow-hidden">
+      <div className="ui-card overflow-hidden">
         {filteredFacturas.length === 0 ? (
-          <div className="py-12 px-4 text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+          <div className="py-14 px-4 text-center">
+            <div className="mx-auto w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3">
               <FileText className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-900">No se encontraron facturas</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Ajuste los filtros de búsqueda o cree un nuevo documento fiscal.
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              No se encontraron facturas
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              Ajuste los criterios de búsqueda o emita un nuevo documento fiscal.
             </p>
-            <div className="mt-4">
+            <div className="mt-5">
               <button
                 onClick={onNewInvoice}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-700"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-xs font-semibold transition-colors"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Crear nueva factura</span>
@@ -269,7 +312,7 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 uppercase font-semibold">
+              <thead className="bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase font-semibold">
                 <tr>
                   <th className="py-3 px-4">Número</th>
                   <th className="py-3 px-4">Cliente / Receptor</th>
@@ -280,59 +323,53 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
                   <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 text-slate-700">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {filteredFacturas.map((f) => (
-                  <tr key={f.id} className="hover:bg-slate-50/60 transition-colors">
-                    {/* Número */}
+                  <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                      <div className="font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <span>{f.numero}</span>
                         {f.esRectificativa && (
-                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-purple-100 text-purple-800">
+                          <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300">
                             R
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400 block font-sans">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-sans">
                         Serie {f.serie}
                       </span>
                     </td>
 
-                    {/* Cliente */}
                     <td className="py-3 px-4 font-medium max-w-[220px]">
-                      <p className="font-semibold text-slate-900 truncate">
+                      <p className="font-semibold text-slate-900 dark:text-white truncate">
                         {f.clienteSnapshot?.nombreOrazonSocial || 'Sin asignar'}
                       </p>
-                      <p className="text-[11px] text-slate-500 font-mono">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                         {f.clienteSnapshot?.nifCif}
                       </p>
                     </td>
 
-                    {/* Fechas */}
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                       <div>{formatDate(f.fechaEmision)}</div>
-                      <div className="text-[10px] text-slate-400">
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
                         Vence: {formatDate(f.fechaVencimiento)}
                       </div>
                     </td>
 
-                    {/* Total Final */}
-                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 text-sm">
+                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white text-sm">
                       {formatCurrency(f.totalFinal)}
                     </td>
 
-                    {/* Pendiente de Cobro */}
                     <td className="py-3 px-4 text-right font-mono">
                       {f.importePendiente > 0 ? (
-                        <span className="text-amber-700 font-semibold">
+                        <span className="text-amber-700 dark:text-amber-400 font-semibold">
                           {formatCurrency(f.importePendiente)}
                         </span>
                       ) : (
-                        <span className="text-emerald-600 font-medium">Liquidada</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Liquidada</span>
                       )}
                     </td>
 
-                    {/* Estado Badge */}
                     <td className="py-3 px-4 text-center">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getBadgeClass(
@@ -343,54 +380,48 @@ export const InvoicesListView: React.FC<InvoicesListViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Acciones */}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Ver / Descargar PDF */}
                         <button
                           onClick={() => onPreviewInvoice(f)}
-                          className="p-1.5 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-700 dark:hover:text-brand-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                           title="Ver y descargar PDF"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Editar o Detalle */}
                         <button
                           onClick={() => onEditInvoice(f)}
-                          className="p-1.5 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-700 dark:hover:text-brand-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                           title={f.estado === 'borrador' ? 'Editar borrador' : 'Ver detalle'}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Registrar cobro (si no es borrador y tiene saldo pendiente) */}
                         {f.estado !== 'borrador' && f.importePendiente > 0 && (
                           <button
                             onClick={() => setPaymentFactura(f)}
-                            className="p-1.5 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors"
                             title="Registrar cobro"
                           >
                             <CreditCard className="w-3.5 h-3.5" />
                           </button>
                         )}
 
-                        {/* Emitir rectificativa (si está emitida y no ha sido ya rectificada) */}
                         {f.estado !== 'borrador' && !f.esRectificativa && f.estado !== 'rectificada' && (
                           <button
                             onClick={() => setRectifyFactura(f)}
-                            className="p-1.5 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-lg transition-colors"
                             title="Emitir factura rectificativa"
                           >
                             <FileDiff className="w-3.5 h-3.5" />
                           </button>
                         )}
 
-                        {/* Eliminar (solo borradores) */}
                         {f.estado === 'borrador' && (
                           <button
                             onClick={() => handleDelete(f.id, f.numero)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                             title="Eliminar borrador"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

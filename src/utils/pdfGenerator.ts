@@ -2,6 +2,26 @@ import jsPDF from 'jspdf';
 import type { Factura } from '../types';
 import { formatCurrency, formatDate } from './taxCalculator';
 
+async function resolveLogoDataUrl(logoSource?: string): Promise<string | null> {
+  const url = logoSource || '/logo.png';
+  if (url.startsWith('data:image')) {
+    return url;
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function generarFacturaPDF(factura: Factura): Promise<jsPDF> {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -15,9 +35,9 @@ export async function generarFacturaPDF(factura: Factura): Promise<jsPDF> {
   const contentWidth = pageWidth - margin * 2;
   let y = margin;
 
-  // Paleta de colores sobria y profesional
+  // Paleta de colores corporativa FACENIA (#144d5b)
   const colors = {
-    primary: [3, 84, 162] as [number, number, number], // Azul corporativo FACENIA
+    primary: [20, 77, 91] as [number, number, number], // Azul petróleo corporativo FACENIA
     dark: [15, 23, 42] as [number, number, number], // Slate 900
     textMuted: [100, 116, 139] as [number, number, number], // Slate 500
     border: [226, 232, 240] as [number, number, number], // Slate 200
@@ -84,13 +104,22 @@ export async function generarFacturaPDF(factura: Factura): Promise<jsPDF> {
   drawWatermark();
 
   // 2. CABECERA: EMISOR Y DATOS DE FACTURA
-  // Lado izquierdo: Logotipo / Nombre Comercial
-  if (factura.emisorSnapshot.logotipoUrl && factura.emisorSnapshot.logotipoUrl.startsWith('data:image')) {
+  // Lado izquierdo: Logotipo oficial FACENIA y Nombre Comercial
+  const logoDataUrl = await resolveLogoDataUrl(factura.emisorSnapshot.logotipoUrl);
+  if (logoDataUrl) {
     try {
-      doc.addImage(factura.emisorSnapshot.logotipoUrl, 'JPEG', margin, y, 35, 16);
-      y += 18;
+      const imgFormat = logoDataUrl.includes('image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(logoDataUrl, imgFormat, margin, y, 16, 16);
+      doc.setTextColor(...colors.dark);
+      doc.setFontSize(15);
+      doc.setFont('helvetica', 'bold');
+      doc.text(factura.emisorSnapshot.nombreComercial || 'FACENIA', margin + 19, y + 9.5);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.primary);
+      doc.text('SISTEMA CORPORATIVO DE FACTURACIÓN', margin + 19, y + 13.5);
+      y += 20;
     } catch {
-      // Si la imagen falla, dibujar texto
       doc.setFillColor(...colors.primary);
       doc.roundedRect(margin, y, 10, 10, 2, 2, 'F');
       doc.setTextColor(...colors.white);
