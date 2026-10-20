@@ -85,7 +85,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 z-30 transition-colors duration-150">
         {/* Brand Header */}
         <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200/80 dark:border-slate-800">
-          <div className="h-9 w-9 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1.5 flex items-center justify-center shadow-subtle shrink-0">
+          <div className="h-9 w-9 rounded-lg bg-white border border-slate-200 dark:border-slate-700 p-1.5 flex items-center justify-center shadow-subtle shrink-0">
             <img
               src={logoSrc}
               alt="FACENIA Logo"
@@ -198,7 +198,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* HEADER MÓVIL */}
       <header className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center">
             <img src={logoSrc} alt="FACENIA" className="w-full h-full object-contain" />
           </div>
           <div>
@@ -239,7 +239,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           <div className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-5 flex flex-col shadow-xl border-r border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center">
                   <img src={logoSrc} alt="FACENIA" className="w-full h-full object-contain" />
                 </div>
                 <span className="font-bold text-sm">FACENIA Facturación</span>
