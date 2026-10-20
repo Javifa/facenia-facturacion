@@ -106,6 +106,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 <p className="text-xs font-semibold text-white truncate">
                   {usuario?.nombre || 'Administrador'}
                 </p>
+                {usuario?.rol === 'admin_supremo' && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-brand-600/30 text-brand-300 border border-brand-500/40 rounded">
+                    Supremo
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400 truncate">{usuario?.email}</p>
             </div>

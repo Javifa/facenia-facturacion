@@ -31,10 +31,7 @@ export const LoginView: React.FC = () => {
     setLoading(true);
     try {
       if (modo === 'login') {
-        const ok = await login(email, password);
-        if (!ok) {
-          setLocalError(authError || 'Credenciales no autorizadas en Supabase.');
-        }
+        await login(email, password);
       } else {
         const res = await signup(email, password, nombre);
         if (res.success) {
@@ -156,14 +153,14 @@ export const LoginView: React.FC = () => {
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Correo Electrónico
+                {modo === 'login' ? 'Correo Electrónico o Usuario' : 'Correo Electrónico'}
               </label>
               <div className="relative">
                 <input
-                  type="email"
+                  type={modo === 'login' ? 'text' : 'email'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ejemplo@facenia.tech"
+                  placeholder={modo === 'login' ? 'admin@gmail.com o usuario' : 'ejemplo@facenia.tech'}
                   required
                   className="w-full pl-9 pr-3 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
                 />

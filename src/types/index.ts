@@ -155,7 +155,7 @@ export interface Usuario {
   id: string;
   email: string;
   nombre: string;
-  rol: 'administrador' | 'gestor';
+  rol: 'admin_supremo' | 'administrador' | 'gestor';
   ultimoAcceso?: string;
 }
 

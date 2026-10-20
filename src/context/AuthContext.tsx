@@ -20,6 +20,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Función auxiliar para sincronizar y obtener el perfil desde la tabla public.usuarios
+  const cargarPerfilUsuario = async (authUser: {
+    id: string;
+    email?: string;
+    user_metadata?: Record<string, any>;
+    app_metadata?: Record<string, any>;
+  }): Promise<Usuario> => {
+    const emailStr = authUser.email || '';
+    const isSuperMeta =
+      emailStr === 'admin@gmail.com' ||
+      authUser.user_metadata?.rol === 'admin_supremo' ||
+      authUser.app_metadata?.rol === 'admin_supremo';
+
+    if (supabase) {
+      try {
+        const { data: filaUsuario } = await supabase
+          .from('usuarios')
+          .select('id, email, username, nombre, rol, ultimo_acceso')
+          .eq('id', authUser.id)
+          .maybeSingle();
+
+        if (filaUsuario) {
+          const ahora = new Date().toISOString();
+          // Actualizar último acceso en segundo plano
+          void supabase
+            .from('usuarios')
+            .update({ ultimo_acceso: ahora, updated_at: ahora })
+            .eq('id', authUser.id);
+
+          const rolValido: Usuario['rol'] =
+            filaUsuario.rol === 'admin_supremo' || isSuperMeta
+              ? 'admin_supremo'
+              : filaUsuario.rol === 'gestor'
+              ? 'gestor'
+              : 'administrador';
+
+          return {
+            id: filaUsuario.id,
+            email: filaUsuario.email || emailStr,
+            nombre: filaUsuario.nombre || (rolValido === 'admin_supremo' ? 'Admin Supremo' : 'Administrador'),
+            rol: rolValido,
+            ultimoAcceso: ahora,
+          };
+        }
+      } catch (err) {
+        console.warn('No se pudo consultar public.usuarios, usando metadatos de sesión:', err);
+      }
+    }
+
+    return {
+      id: authUser.id,
+      email: emailStr,
+      nombre:
+        authUser.user_metadata?.nombre ||
+        (isSuperMeta ? 'Admin Supremo' : emailStr.split('@')[0] || 'Administrador'),
+      rol: isSuperMeta ? 'admin_supremo' : 'administrador',
+      ultimoAcceso: new Date().toISOString(),
+    };
+  };
+
   // Inicialización de sesión desde Supabase Auth
   useEffect(() => {
     const initSession = async () => {
@@ -35,13 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (session?.user) {
-          setUsuario({
-            id: session.user.id,
-            email: session.user.email || '',
-            nombre: session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Administrador',
-            rol: 'administrador',
-            ultimoAcceso: new Date().toISOString(),
-          });
+          const perfil = await cargarPerfilUsuario(session.user);
+          setUsuario(perfil);
         }
       } catch (err) {
         console.error('Error restaurando sesión de Supabase:', err);
@@ -56,17 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isSupabaseConfigured && supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) {
-          setUsuario({
-            id: session.user.id,
-            email: session.user.email || '',
-            nombre: session.user.user_metadata?.nombre || session.user.email?.split('@')[0] || 'Administrador',
-            rol: 'administrador',
-            ultimoAcceso: new Date().toISOString(),
+          void cargarPerfilUsuario(session.user).then((perfil) => {
+            setUsuario(perfil);
+            setIsLoading(false);
           });
         } else {
           setUsuario(null);
+          setIsLoading(false);
         }
-        setIsLoading(false);
       });
 
       return () => {
@@ -75,13 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, pass: string): Promise<boolean> => {
+  const login = async (emailOrUser: string, pass: string): Promise<boolean> => {
     setError(null);
-    const cleanEmail = email.trim().toLowerCase();
+    const rawIdentifier = emailOrUser.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    if (!cleanEmail || !cleanPass) {
-      setError('Por favor, introduzca su correo electrónico y contraseña.');
+    if (!rawIdentifier || !cleanPass) {
+      setError('Por favor, introduzca su usuario o correo electrónico y contraseña.');
       return false;
     }
 
@@ -91,14 +143,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // 1. Verificar hash bcrypt contra public.usuarios mediante RPC login_usuario
+      const { data: rpcValid } = await supabase.rpc('login_usuario', {
+        p_username: rawIdentifier,
+        p_password: cleanPass,
+      });
+
+      let cleanEmail = rawIdentifier === 'admin123' ? 'admin123@facenia.tech' : rawIdentifier;
+
+      // 2. Si el identificador es un username sin @, resolvemos su email en public.usuarios
+      if (!cleanEmail.includes('@')) {
+        const { data: resolvedEmail } = await supabase.rpc('resolver_email_login', {
+          p_identificador: rawIdentifier,
+        });
+        if (resolvedEmail && typeof resolvedEmail === 'string' && resolvedEmail.includes('@')) {
+          cleanEmail = resolvedEmail;
+        }
+      }
+
+      // 3. Iniciar sesión autenticada JWT en Supabase Auth
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: cleanPass,
       });
 
-      if (authError) {
+      if (authError && !rpcValid) {
         if (authError.message.includes('Invalid login credentials')) {
-          setError('Credenciales incorrectas. Verifique el correo y la contraseña.');
+          setError('Credenciales incorrectas. Verifique el usuario/correo y la contraseña.');
         } else if (authError.message.includes('Email not confirmed')) {
           setError('El correo electrónico no ha sido confirmado aún en Supabase.');
         } else {
@@ -108,13 +179,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        setUsuario({
-          id: data.user.id,
-          email: data.user.email || cleanEmail,
-          nombre: data.user.user_metadata?.nombre || cleanEmail.split('@')[0] || 'Administrador',
-          rol: 'administrador',
-          ultimoAcceso: new Date().toISOString(),
-        });
+        const perfil = await cargarPerfilUsuario(data.user);
+        setUsuario(perfil);
         return true;
       }
 
