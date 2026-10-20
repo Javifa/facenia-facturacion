@@ -8,7 +8,6 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, pass: string) => Promise<boolean>;
-  signup: (email: string, pass: string, nombre?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   solicitarRecuperacion: (email: string) => Promise<{ success: boolean; message: string }>;
 }
@@ -201,52 +200,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, pass: string, nombre?: string): Promise<{ success: boolean; message: string }> => {
-    setError(null);
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = pass.trim();
-
-    if (!cleanEmail || !cleanPass) {
-      return { success: false, message: 'Debe especificar correo y contraseña.' };
-    }
-
-    if (cleanPass.length < 6) {
-      return { success: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      return { success: false, message: 'Supabase no está configurado.' };
-    }
-
-    try {
-      const { data, error: signError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: cleanPass,
-        options: {
-          data: {
-            nombre: nombre?.trim() || cleanEmail.split('@')[0] || 'Administrador',
-          },
-        },
-      });
-
-      if (signError) {
-        return { success: false, message: signError.message };
-      }
-
-      if (data.session) {
-        // Sesión creada automáticamente (sin confirmación requerida)
-        return { success: true, message: 'Cuenta de administrador creada y sesión iniciada correctamente.' };
-      }
-
-      return {
-        success: true,
-        message: 'Usuario registrado. Si su proyecto requiere confirmación de email, revise su bandeja de entrada.',
-      };
-    } catch (err: any) {
-      return { success: false, message: err?.message || 'Error al registrar el usuario' };
-    }
-  };
-
   const logout = async () => {
     try {
       if (isSupabaseConfigured && supabase) {
@@ -295,7 +248,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         error,
         login,
-        signup,
         logout,
         solicitarRecuperacion,
       }}
